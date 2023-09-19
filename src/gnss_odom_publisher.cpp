@@ -20,9 +20,14 @@ void GnssOdomPublisher::odom_callback(const nav_msgs::msg::Odometry::SharedPtr o
 {
   //RCLCPP_INFO(this->get_logger(), "Position-> x: [%f]", odom->pose.pose.position.x);
   subscribe_time = this -> get_clock() -> now();
+
+  prev_time = recv_time;
+  prev_pose = recv_pose;
+
   recv_pose = odom -> pose.pose;
   recv_cov = odom -> pose.covariance;
-  publish();
+
+  calc_vel_theta();
 }
 
 void GnssOdomPublisher::publish()
@@ -44,6 +49,24 @@ void GnssOdomPublisher::publish()
   odom.twist.twist.angular.z = 0.0;
 
   odom_pub_ -> publish(odom);
+}
+
+void GnssOdomPublisher::calc_vel_theta()
+{
+  geometry_msgs::msg::Pose pose_distance;
+  float distance;
+
+  if(!prev_pose.position.x || !prev_pose.position.y) return;
+
+  pose_distance.position.x = recv_pose.position.x - prev_pose.position.x;
+  pose_distance.position.y = recv_pose.position.y - prev_pose.position.y;
+
+  distance = pow(pose_distance.position.x, 2.0) + pow(pose_distance.position.y, 2.0);
+  distance = pow(distance, 0.5);
+
+  RCLCPP_INFO(this->get_logger(), "distance: [%f]", distance);
+
+  //publish();
 }
 
 
