@@ -20,6 +20,8 @@ void GnssOdomPublisher::odom_callback(const nav_msgs::msg::Odometry::SharedPtr o
 {
   //RCLCPP_INFO(this->get_logger(), "Position-> x: [%f]", odom->pose.pose.position.x);
   subscribe_time = this -> get_clock() -> now();
+  recv_pose = odom -> pose.pose;
+  recv_cov = odom -> pose.covariance;
   publish();
 }
 
@@ -33,13 +35,8 @@ void GnssOdomPublisher::publish()
   odom.header.frame_id = std::string("odom_frame");
   odom.child_frame_id = std::string("odom_child_frame");
   // set the position
-  odom.pose.pose.position.x = 0.0;
-  odom.pose.pose.position.y = 0.0;
-  odom.pose.pose.position.z = 0.0;
-  odom.pose.pose.orientation.x = 0.0;
-  odom.pose.pose.orientation.y = 0.0;
-  odom.pose.pose.orientation.z = 0.0;
-  odom.pose.pose.orientation.w = 0.0;
+  odom.pose.pose = recv_pose;
+  odom.pose.covariance = recv_cov;
 
   // set the velocity
   odom.twist.twist.linear.x = 0.0;
