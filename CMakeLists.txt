@@ -15,10 +15,11 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 
 add_executable(gnss_odom_publisher src/gnss_odom_publisher.cpp)
-ament_target_dependencies(gnss_odom_publisher rclcpp nav_msgs)
+ament_target_dependencies(gnss_odom_publisher rclcpp nav_msgs geometry_msgs)
 
 target_include_directories(gnss_odom_publisher PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
