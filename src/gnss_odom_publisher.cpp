@@ -1,6 +1,7 @@
 #include "gnss_odom_publisher/gnss_odom_publisher.hpp"
 
 
+#define DEBUG_ON
 
 
 
@@ -18,14 +19,18 @@ GnssOdomPublisher::GnssOdomPublisher()
 
 void GnssOdomPublisher::odom_callback(const nav_msgs::msg::Odometry::SharedPtr odom)
 {
-  //RCLCPP_INFO(this->get_logger(), "Position-> x: [%f]", odom->pose.pose.position.x);
-  subscribe_time = this -> get_clock() -> now();
-
   prev_time = recv_time;
   prev_pose = recv_pose;
 
+  recv_time.sec = odom -> header.stamp.sec;
+  recv_time.nanosec = odom -> header.stamp.nanosec;
+
+  #ifdef DEBUG_ON
+    RCLCPP_INFO(this->get_logger(), "recv_time [%u.%u]", recv_time.sec, recv_time.nanosec);
+  #endif
+
   recv_pose = odom -> pose.pose;
-  recv_cov = odom -> pose.covariance;
+  recv_pose_cov = odom -> pose.covariance;
 
   calc_vel_theta();
 }
@@ -33,20 +38,24 @@ void GnssOdomPublisher::odom_callback(const nav_msgs::msg::Odometry::SharedPtr o
 void GnssOdomPublisher::publish()
 {
   nav_msgs::msg::Odometry odom;
+  geometry_msgs::msg::Quaternion odom_quat = tf2::toMsg(quat);
 
-  /* 仮で適当な値をpublishさせる */
 
-  odom.header.stamp = subscribe_time;
-  odom.header.frame_id = std::string("odom_frame");
-  odom.child_frame_id = std::string("odom_child_frame");
+  // set the header
+  odom.header.stamp = this->get_clock()->now();
+  odom.header.frame_id = std::string("map");
+  //odom.child_frame_id = std::string("odom_child_frame");
+
   // set the position
-  odom.pose.pose = recv_pose;
-  odom.pose.covariance = recv_cov;
+  odom.pose.pose.position = recv_pose.position;
+  odom.pose.pose.orientation = odom_quat;
+  odom.pose.covariance = recv_pose_cov;
 
   // set the velocity
-  odom.twist.twist.linear.x = 0.0;
+  odom.twist.twist.linear.x = velocity;
   odom.twist.twist.linear.y = 0.0;
   odom.twist.twist.angular.z = 0.0;
+
 
   odom_pub_ -> publish(odom);
 }
@@ -54,7 +63,7 @@ void GnssOdomPublisher::publish()
 void GnssOdomPublisher::calc_vel_theta()
 {
   geometry_msgs::msg::Pose pose_distance;
-  float distance;
+  double distance, dt, rad;
 
   if(!prev_pose.position.x || !prev_pose.position.y) return;
 
@@ -64,9 +73,23 @@ void GnssOdomPublisher::calc_vel_theta()
   distance = pow(pose_distance.position.x, 2.0) + pow(pose_distance.position.y, 2.0);
   distance = pow(distance, 0.5);
 
-  RCLCPP_INFO(this->get_logger(), "distance: [%f]", distance);
+  dt = (recv_time.sec + (double)recv_time.nanosec / 1000000000) - (prev_time.sec + (double)prev_time.nanosec / 1000000000);
+  velocity = (dt * distance) * (1 / dt);
 
-  //publish();
+  rad = atan2(recv_pose.position.y - prev_pose.position.y, recv_pose.position.x - prev_pose.position.x);
+
+  quat.setRPY(0,0,rad);
+  quat = quat.normalize();
+
+
+  #ifdef DEBUG_ON
+    RCLCPP_INFO(this->get_logger(), "distance [%lf]", distance);
+    RCLCPP_INFO(this->get_logger(), "dt [%f]", dt);
+    RCLCPP_INFO(this->get_logger(), "x velocity [%f]", velocity);
+    RCLCPP_INFO(this->get_logger(), "quaternion [%f, %f, %f, %f]", quat.getX(), quat.getY(), quat.getZ(), quat.getW());
+  #endif
+
+  publish();
 }
 
 
