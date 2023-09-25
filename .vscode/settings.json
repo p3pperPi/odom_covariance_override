@@ -5,6 +5,7 @@
         "unordered_set": "cpp",
         "cmath": "cpp",
         "complex": "cpp",
-        "iterator": "cpp"
+        "iterator": "cpp",
+        "chrono": "cpp"
     }
 }
