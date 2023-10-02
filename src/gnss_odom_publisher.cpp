@@ -40,6 +40,16 @@ void GnssOdomPublisher::publish()
   nav_msgs::msg::Odometry odom;
   geometry_msgs::msg::Quaternion odom_quat = tf2::toMsg(quat);
 
+  pose_yaw_covariance = 0.5;
+
+  pose_cov = {
+    static_cast<double>(recv_pose_cov[0]), 0., 0., 0., 0., 0.,
+    0., static_cast<double>(recv_pose_cov[7]), 0., 0., 0., 0.,
+    0., 0., static_cast<double>(recv_pose_cov[14]), 0., 0., 0.,
+    0., 0., 0., 0., 0., 0.,
+    0., 0., 0., 0., 0., 0.,
+    0., 0., 0., 0., 0., pose_yaw_covariance };
+
 
   // set the header
   odom.header.stamp = this->get_clock()->now();
@@ -49,7 +59,7 @@ void GnssOdomPublisher::publish()
   // set the position
   odom.pose.pose.position = recv_pose.position;
   odom.pose.pose.orientation = odom_quat;
-  odom.pose.covariance = recv_pose_cov;
+  odom.pose.covariance = pose_cov;
 
   // set the velocity
   odom.twist.twist.linear.x = velocity;

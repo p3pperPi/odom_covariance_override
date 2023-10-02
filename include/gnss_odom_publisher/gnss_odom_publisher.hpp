@@ -37,8 +37,10 @@ class GnssOdomPublisher : public rclcpp::Node
 
         geometry_msgs::msg::PoseWithCovariance current_pose;
         geometry_msgs::msg::TwistWithCovariance current_twist;
+        std::array<double, 36> pose_cov;
         tf2::Quaternion quat;
         double velocity;
+        float pose_yaw_covariance;
 
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
