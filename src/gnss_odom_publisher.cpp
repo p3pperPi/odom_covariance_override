@@ -10,9 +10,11 @@ GnssOdomPublisher::GnssOdomPublisher()
 {
   // read parameters
   // 今はべた書き
-  sub_topic_name = "odometry/gps/raw";
-  pub_topic_name = "odom";
-  frame_id = "map";
+  sub_topic_name = "odometry/gps/raw";  // subscribeするトピック名
+  pub_topic_name = "odom";              // publishするトピック名
+  frame_id = "map";                     // publishするトピックのframe_id
+  yc_mag = 0.5;                         // pose position covarianceの倍率
+  distance_threshold = 0.1;             // 前回からの移動量。この設定値未満の移動量だった場合、pose yaw covarianceは問答無用で2pi^2となる
 
 
   // pub/sub initialize
@@ -86,7 +88,7 @@ void GnssOdomPublisher::calc_vel_theta()
   pose_distance.position.y = recv_pose.position.y - prev_pose.position.y;
 
   distance = pow(pose_distance.position.x, 2.0) + pow(pose_distance.position.y, 2.0);
-  distance = pow(distance, 0.5);
+  distance = sqrt(distance);
 
   dt = (recv_time.sec + (double)recv_time.nanosec / 1000000000) - (prev_time.sec + (double)prev_time.nanosec / 1000000000);
   velocity = (dt * distance) * (1 / dt);
@@ -107,36 +109,40 @@ void GnssOdomPublisher::calc_vel_theta()
   publish();
 }
 
+
+
 /*
 * yaw角度のcovarianceを計算します。
 *
-* @return 現在座標と前回座標のcovarianceから取りうる角度のcovarianceを求めて、返します。asin関数の範囲外の場合、covarianceは6.28^2を返し、yaw角度の信頼度を限りなくゼロにします。
+* @return 現在座標と前回座標のcovarianceから取りうる角度のcovarianceを求めて、返します。asin関数の範囲外の場合、covarianceは2pi^2を返し、yaw角度の信頼度を限りなくゼロにします。
 */
 double GnssOdomPublisher::calc_yaw_covariance()
 {
-  double stheta_t, distance;
+  double stheta_t, distance, cur_sx, prev_sx;
 
   distance = pow((recv_pose.position.x - prev_pose.position.x), 2.0) + pow((recv_pose.position.y - prev_pose.position.y), 2.0);
-  distance = pow(distance, 0.5);
+  distance = sqrt(distance);
 
-  stheta_t = (pow(recv_pose_cov[0], 0.5) + pow(prev_pose_cov[0], 0.5)) / distance;
-
-  errno = 0;  // asinエラーハンドリング用
-  stheta_t = asin(stheta_t);
-  
-  #ifdef DEBUG_ON
-  RCLCPP_INFO(this->get_logger(), "yaw_cov= [%f]", stheta_t);
-  #endif
-
-
-  if(errno == 0)
+  if(distance > distance_threshold)
   {
-    pose_yaw_covariance = pow(stheta_t, 2.0);
+      cur_sx = sqrt(recv_pose_cov[0]) * yc_mag;
+      prev_sx = sqrt(prev_pose_cov[0]) * yc_mag;
+
+      stheta_t = (cur_sx + prev_sx) / distance;
+
+      errno = 0;  // asinエラーハンドリング用
+      stheta_t = asin(stheta_t);
+
+      pose_yaw_covariance = (errno == 0) ? pow(stheta_t, 2.0) :  39.4784176043574;  // 範囲外の場合は2pi^2
   }
   else
   {
-    pose_yaw_covariance = 39.4784176043574;
+    pose_yaw_covariance = 39.4784176043574; // 2pi^2
   }
+
+  #ifdef DEBUG_ON
+    RCLCPP_INFO(this->get_logger(), "yaw_cov= [%f]", stheta_t);
+  #endif
 
 
   return pose_yaw_covariance;
