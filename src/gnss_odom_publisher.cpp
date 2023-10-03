@@ -52,7 +52,8 @@ void GnssOdomPublisher::publish()
 
 
   // set the header
-  odom.header.stamp = this->get_clock()->now();
+  odom.header.stamp.sec = recv_time.sec;
+  odom.header.stamp.nanosec = recv_time.nanosec;
   odom.header.frame_id = std::string("map");
   //odom.child_frame_id = std::string("odom_child_frame");
 
