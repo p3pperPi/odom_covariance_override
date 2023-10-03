@@ -30,6 +30,8 @@ class GnssOdomPublisher : public rclcpp::Node
         std::string sub_topic_name;
         std::string pub_topic_name;
         std::string frame_id;
+        double yc_mag;  // pose yaw covarianceの倍率（チューニング用パラメータ）
+        double distance_threshold;
 
         // variables
         rclcpp::Time subscribe_time;    // 一旦仮
