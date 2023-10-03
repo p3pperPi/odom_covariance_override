@@ -25,6 +25,7 @@ void GnssOdomPublisher::odom_callback(const nav_msgs::msg::Odometry::SharedPtr o
 {
   prev_time = recv_time;
   prev_pose = recv_pose;
+  prev_pose_cov = recv_pose_cov;
 
   recv_time.sec = odom -> header.stamp.sec;
   recv_time.nanosec = odom -> header.stamp.nanosec;
@@ -44,7 +45,7 @@ void GnssOdomPublisher::publish()
   nav_msgs::msg::Odometry odom;
   geometry_msgs::msg::Quaternion odom_quat = tf2::toMsg(quat);
 
-  pose_yaw_covariance = 0.5;
+  pose_yaw_covariance = calc_yaw_covariance();
 
   pose_cov = {
     static_cast<double>(recv_pose_cov[0]), 0., 0., 0., 0., 0.,
@@ -104,6 +105,41 @@ void GnssOdomPublisher::calc_vel_theta()
   #endif
 
   publish();
+}
+
+/*
+* yaw角度のcovarianceを計算します。
+*
+* @return 現在座標と前回座標のcovarianceから取りうる角度のcovarianceを求めて、返します。asin関数の範囲外の場合、covarianceは6.28^2を返し、yaw角度の信頼度を限りなくゼロにします。
+*/
+double GnssOdomPublisher::calc_yaw_covariance()
+{
+  double stheta_t, distance;
+
+  distance = pow((recv_pose.position.x - prev_pose.position.x), 2.0) + pow((recv_pose.position.y - prev_pose.position.y), 2.0);
+  distance = pow(distance, 0.5);
+
+  stheta_t = (pow(recv_pose_cov[0], 0.5) + pow(prev_pose_cov[0], 0.5)) / distance;
+
+  errno = 0;  // asinエラーハンドリング用
+  stheta_t = asin(stheta_t);
+  
+  #ifdef DEBUG_ON
+  RCLCPP_INFO(this->get_logger(), "yaw_cov= [%f]", stheta_t);
+  #endif
+
+
+  if(errno == 0)
+  {
+    pose_yaw_covariance = pow(stheta_t, 2.0);
+  }
+  else
+  {
+    pose_yaw_covariance = 39.4784176043574;
+  }
+
+
+  return pose_yaw_covariance;
 }
 
 

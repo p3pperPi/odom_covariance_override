@@ -40,13 +40,14 @@ class GnssOdomPublisher : public rclcpp::Node
 
         builtin_interfaces::msg::Time prev_time;
         geometry_msgs::msg::Pose prev_pose;
+        std::array<double, 36> prev_pose_cov;
 
         geometry_msgs::msg::PoseWithCovariance current_pose;
         geometry_msgs::msg::TwistWithCovariance current_twist;
         std::array<double, 36> pose_cov;
         tf2::Quaternion quat;
         double velocity;
-        float pose_yaw_covariance;
+        double pose_yaw_covariance;
 
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
@@ -56,6 +57,7 @@ class GnssOdomPublisher : public rclcpp::Node
 
         void publish();
         void calc_vel_theta();
+        double calc_yaw_covariance();
     public:
         GnssOdomPublisher();
 };
