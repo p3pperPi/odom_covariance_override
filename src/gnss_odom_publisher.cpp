@@ -9,15 +9,14 @@ GnssOdomPublisher::GnssOdomPublisher()
 : Node("gnss_odom_publisher")
 {
   // read parameters
-  //this->declare_parameter("subscribe_topic_name", "odometry/gps/raw");
+  this->declare_parameter("subscribe_topic_name", "odometry/gps/raw");
   this->declare_parameter("publish_topic_name", "odom");
-  // 今はべた書き
-  sub_topic_name = "odometry/gps/raw";  // subscribeするトピック名
-  pub_topic_name = "odom";              // publishするトピック名
-  frame_id = "map";                     // publishするトピックのframe_id
-  yc_mag = 0.5;                         // pose position covarianceの倍率
-  distance_threshold = 0.1;             // 前回からの移動量。この設定値未満の移動量だった場合、pose yaw covarianceは問答無用で2pi^2となる
+  this->declare_parameter("frame_id", "map");
+  this->declare_parameter("pose_covariance_magnification", 0.5);
+  this->declare_parameter("distance_threshold", 0.1);
 
+  std::string sub_topic_name = this->get_parameter("subscribe_topic_name").as_string();
+  std::string pub_topic_name = this->get_parameter("publish_topic_name").as_string();
 
   // pub/sub initialize
   odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(pub_topic_name, 10);
@@ -48,6 +47,7 @@ void GnssOdomPublisher::publish()
 {
   nav_msgs::msg::Odometry odom;
   geometry_msgs::msg::Quaternion odom_quat = tf2::toMsg(quat);
+  std::string frame_id = this->get_parameter("frame_id").as_string();
 
   pose_yaw_covariance = calc_yaw_covariance();
 
@@ -121,14 +121,16 @@ void GnssOdomPublisher::calc_vel_theta()
 double GnssOdomPublisher::calc_yaw_covariance()
 {
   double stheta_t, distance, cur_sx, prev_sx;
+  double pc_mag = this->get_parameter("pose_covariance_magnification").as_double();
+  double distance_threshold = this->get_parameter("distance_threshold").as_double();
 
   distance = pow((recv_pose.position.x - prev_pose.position.x), 2.0) + pow((recv_pose.position.y - prev_pose.position.y), 2.0);
   distance = sqrt(distance);
 
   if(distance > distance_threshold)
   {
-      cur_sx = sqrt(recv_pose_cov[0]) * yc_mag;
-      prev_sx = sqrt(prev_pose_cov[0]) * yc_mag;
+      cur_sx = sqrt(recv_pose_cov[0]) * pc_mag;
+      prev_sx = sqrt(prev_pose_cov[0]) * pc_mag;
 
       stheta_t = (cur_sx + prev_sx) / distance;
 
