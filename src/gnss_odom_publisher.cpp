@@ -9,9 +9,11 @@ GnssOdomPublisher::GnssOdomPublisher()
 : Node("gnss_odom_publisher")
 {
   // read parameters
+  //this->declare_parameter("subscribe_topic_name", "odometry/gps/raw");
+  this->declare_parameter("publish_topic_name", "odom");
   // 今はべた書き
   sub_topic_name = "odometry/gps/raw";
-  pub_topic_name = "odom";
+  pub_topic_name = this->get_parameter("publish_topic_name").as_string();
   frame_id = "map";
 
 
