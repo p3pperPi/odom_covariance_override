@@ -26,6 +26,12 @@ using std::placeholders::_1;
 class GnssOdomPublisher : public rclcpp::Node
 {
     private:
+        // parameters
+        std::string sub_topic_name;
+        std::string pub_topic_name;
+        std::string frame_id;
+
+        // variables
         rclcpp::Time subscribe_time;    // 一旦仮
 
         builtin_interfaces::msg::Time recv_time;
@@ -45,6 +51,7 @@ class GnssOdomPublisher : public rclcpp::Node
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
 
+        // functions
         void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
 
         void publish();

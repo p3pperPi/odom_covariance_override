@@ -9,12 +9,16 @@ GnssOdomPublisher::GnssOdomPublisher()
 : Node("gnss_odom_publisher")
 {
   // read parameters
+  // 今はべた書き
+  sub_topic_name = "odometry/gps/raw";
+  pub_topic_name = "odom";
+  frame_id = "map";
 
 
   // pub/sub initialize
-  odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("/odom", 10);
+  odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(pub_topic_name, 10);
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-    "odometry/gps/raw", 10, std::bind(&GnssOdomPublisher::odom_callback, this, _1));
+    sub_topic_name, 10, std::bind(&GnssOdomPublisher::odom_callback, this, _1));
 }
 
 void GnssOdomPublisher::odom_callback(const nav_msgs::msg::Odometry::SharedPtr odom)
@@ -54,8 +58,7 @@ void GnssOdomPublisher::publish()
   // set the header
   odom.header.stamp.sec = recv_time.sec;
   odom.header.stamp.nanosec = recv_time.nanosec;
-  odom.header.frame_id = std::string("map");
-  //odom.child_frame_id = std::string("odom_child_frame");
+  odom.header.frame_id = frame_id;
 
   // set the position
   odom.pose.pose.position = recv_pose.position;
