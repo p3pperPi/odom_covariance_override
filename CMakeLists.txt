@@ -31,6 +31,13 @@ install(TARGETS
   gnss_odom_publisher
   DESTINATION lib/${PROJECT_NAME})
 
+install(DIRECTORY
+  params
+  launch
+  DESTINATION share/${PROJECT_NAME}
+  USE_SOURCE_PERMISSIONS
+)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

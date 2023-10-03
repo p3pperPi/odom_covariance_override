@@ -1,16 +1,15 @@
 from launch import LaunchDescription
-from launch_ros.actions import Node
+import launch_ros.actions
 
 def generate_launch_description():
     return LaunchDescription([
-        Node(
+        launch_ros.actions.Node(
             package="gnss_odom_publisher",
             executable="gnss_odom_publisher",
             name="gnss_odom_publisher",
             output="screen",
-            emulate_tty=True,
             parameters=[
                 {"publish_topic_name": "hoge"}
             ]
-        )
+        ),
     ])
