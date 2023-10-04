@@ -44,6 +44,7 @@ void OdomCovarianceOverride::odom_callback(const nav_msgs::msg::Odometry::Shared
   recv_time.sec     = odom -> header.stamp.sec;
   recv_time.nanosec = odom -> header.stamp.nanosec;
   recv_frame_id     = odom -> header.frame_id;
+  recv_child_id     = odom -> child_frame_id;
 
   #ifdef DEBUG_ON
     RCLCPP_INFO(this->get_logger(), "recv_time [%u.%u]", recv_time.sec, recv_time.nanosec);
@@ -94,6 +95,7 @@ void OdomCovarianceOverride::publish()
   }else{
     odom.header.frame_id      = recv_frame_id;
   }
+  odom.child_frame_id = recv_child_id;
 
   // set the position
   odom.pose.pose        = recv_pose;

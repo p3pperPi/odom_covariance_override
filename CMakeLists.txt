@@ -35,7 +35,7 @@ install(DIRECTORY
   params
   launch
   DESTINATION share/${PROJECT_NAME}
-  USE_SOURCE_PERMISSIONS
+  # USE_SOURCE_PERMISSIONS
 )
 
 

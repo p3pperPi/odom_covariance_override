@@ -52,6 +52,7 @@ class OdomCovarianceOverride : public rclcpp::Node
         double pose_yaw_covariance;
 
         std::string recv_frame_id;
+        std::string recv_child_id;
         bool override_frame;
 
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
