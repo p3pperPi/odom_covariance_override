@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(gnss_odom_publisher)
+project(odom_covariance_override)
 
 
 if(NOT CMAKE_CXX_STANDARD)
@@ -19,16 +19,16 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
 
-add_executable(gnss_odom_publisher src/gnss_odom_publisher.cpp)
-ament_target_dependencies(gnss_odom_publisher rclcpp std_msgs nav_msgs geometry_msgs)
+add_executable(odom_covariance_override src/odom_covariance_override.cpp)
+ament_target_dependencies(odom_covariance_override rclcpp std_msgs nav_msgs geometry_msgs)
 
-target_include_directories(gnss_odom_publisher PUBLIC
+target_include_directories(odom_covariance_override PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 
 
 install(TARGETS
-  gnss_odom_publisher
+  odom_covariance_override
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY

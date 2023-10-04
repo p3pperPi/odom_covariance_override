@@ -6,10 +6,10 @@ import os
 def generate_launch_description():
     return LaunchDescription([
         launch_ros.actions.Node(
-            package="gnss_odom_publisher",
-            executable="gnss_odom_publisher",
-            name="gnss_odom_publisher",
+            package="odom_covariance_override",
+            executable="odom_covariance_override",
+            name="odom_covariance_override",
             output="screen",
-            parameters=[os.path.join(get_package_share_directory("gnss_odom_publisher"), 'params', 'config.yaml')]
+            parameters=[os.path.join(get_package_share_directory("odom_covariance_override"), 'params', 'config.yaml')]
         ),
     ])

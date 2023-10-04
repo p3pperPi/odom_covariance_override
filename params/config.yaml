@@ -1,4 +1,4 @@
-gnss_odom_publisher:
+odom_covariance_override:
   ros__parameters:
     publish_topic_name: hoge                # subscribeするトピック名
     subscribe_topic_name: odometry/gps/raw  # publishするトピック名

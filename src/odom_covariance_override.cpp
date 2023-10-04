@@ -1,12 +1,12 @@
-#include "gnss_odom_publisher/gnss_odom_publisher.hpp"
+#include "odom_covariance_override/odom_covariance_override.hpp"
 
 
 #define DEBUG_ON
 
 
 
-GnssOdomPublisher::GnssOdomPublisher()
-: Node("gnss_odom_publisher")
+OdomCovarianceOverride::OdomCovarianceOverride()
+: Node("odom_covariance_override")
 {
   // read parameters
   this->declare_parameter("subscribe_topic_name", "odometry/gps/raw");
@@ -21,10 +21,10 @@ GnssOdomPublisher::GnssOdomPublisher()
   // pub/sub initialize
   odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(pub_topic_name, 10);
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-    sub_topic_name, 10, std::bind(&GnssOdomPublisher::odom_callback, this, _1));
+    sub_topic_name, 10, std::bind(&OdomCovarianceOverride::odom_callback, this, _1));
 }
 
-void GnssOdomPublisher::odom_callback(const nav_msgs::msg::Odometry::SharedPtr odom)
+void OdomCovarianceOverride::odom_callback(const nav_msgs::msg::Odometry::SharedPtr odom)
 {
   prev_time = recv_time;
   prev_pose = recv_pose;
@@ -43,7 +43,7 @@ void GnssOdomPublisher::odom_callback(const nav_msgs::msg::Odometry::SharedPtr o
   calc_vel_theta();
 }
 
-void GnssOdomPublisher::publish()
+void OdomCovarianceOverride::publish()
 {
   nav_msgs::msg::Odometry odom;
   geometry_msgs::msg::Quaternion odom_quat = tf2::toMsg(quat);
@@ -79,7 +79,7 @@ void GnssOdomPublisher::publish()
   odom_pub_ -> publish(odom);
 }
 
-void GnssOdomPublisher::calc_vel_theta()
+void OdomCovarianceOverride::calc_vel_theta()
 {
   geometry_msgs::msg::Pose pose_distance;
   double distance, dt, rad;
@@ -118,7 +118,7 @@ void GnssOdomPublisher::calc_vel_theta()
 *
 * @return 現在座標と前回座標のcovarianceから取りうる角度のcovarianceを求めて、返します。asin関数の範囲外の場合、covarianceは2pi^2を返し、yaw角度の信頼度を限りなくゼロにします。
 */
-double GnssOdomPublisher::calc_yaw_covariance()
+double OdomCovarianceOverride::calc_yaw_covariance()
 {
   double stheta_t, distance, cur_sx, prev_sx;
   double pc_mag = this->get_parameter("pose_covariance_magnification").as_double();
@@ -158,7 +158,7 @@ double GnssOdomPublisher::calc_yaw_covariance()
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  std::shared_ptr<GnssOdomPublisher> node = std::make_shared<GnssOdomPublisher>();
+  std::shared_ptr<OdomCovarianceOverride> node = std::make_shared<OdomCovarianceOverride>();
 
   try
   {

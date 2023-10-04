@@ -1,5 +1,5 @@
-#ifndef GNSS_ODOM_PUBLISHER_H
-#define GNSS_ODOM_PUBLISHER_H
+#ifndef ODOM_COVARIANCE_OVERRIDE_H
+#define ODOM_COVARIANCE_OVERRIDE_H
 
 
 // ros2
@@ -23,7 +23,7 @@
 using std::placeholders::_1;
 
 
-class GnssOdomPublisher : public rclcpp::Node
+class OdomCovarianceOverride : public rclcpp::Node
 {
     private:
         // variables
@@ -54,7 +54,7 @@ class GnssOdomPublisher : public rclcpp::Node
         void calc_vel_theta();
         double calc_yaw_covariance();
     public:
-        GnssOdomPublisher();
+        OdomCovarianceOverride();
 };
 
 #endif
