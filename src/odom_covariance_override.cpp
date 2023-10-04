@@ -9,19 +9,30 @@ OdomCovarianceOverride::OdomCovarianceOverride()
 : Node("odom_covariance_override")
 {
   // read parameters
-  this->declare_parameter("subscribe_topic_name", "odometry/gps/raw");
+  this->declare_parameter("subscribe_topic_name", "odom/raw");
   this->declare_parameter("publish_topic_name", "odom");
-  this->declare_parameter("frame_id", "map");
+  this->declare_parameter("frame_id", "odom");
+  this->declare_parameter("override_frame_id", false);
   this->declare_parameter("pose_covariance_magnification", 0.5);
   this->declare_parameter("distance_threshold", 0.1);
 
+  // Covariance
+  this->declare_parameter("pose_covariance" ,std::vector<double> (6,0.0));
+  this->declare_parameter("twist_covariance",std::vector<double> (6,0.0));
+
+
   std::string sub_topic_name = this->get_parameter("subscribe_topic_name").as_string();
   std::string pub_topic_name = this->get_parameter("publish_topic_name").as_string();
+  
+  override_frame = this->get_parameter("override_frame_id").as_bool();
+
+  pose_covariance_in  = this->get_parameter("pose_covariance").as_double_array();
+  twist_covariance_in = this->get_parameter("twist_covariance").as_double_array();
 
   // pub/sub initialize
   odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(pub_topic_name, 10);
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-    sub_topic_name, 10, std::bind(&OdomCovarianceOverride::odom_callback, this, _1));
+  sub_topic_name, 10, std::bind(&OdomCovarianceOverride::odom_callback, this, _1));
 }
 
 void OdomCovarianceOverride::odom_callback(const nav_msgs::msg::Odometry::SharedPtr odom)
@@ -30,17 +41,23 @@ void OdomCovarianceOverride::odom_callback(const nav_msgs::msg::Odometry::Shared
   prev_pose = recv_pose;
   prev_pose_cov = recv_pose_cov;
 
-  recv_time.sec = odom -> header.stamp.sec;
+  recv_time.sec     = odom -> header.stamp.sec;
   recv_time.nanosec = odom -> header.stamp.nanosec;
+  recv_frame_id     = odom -> header.frame_id;
 
   #ifdef DEBUG_ON
     RCLCPP_INFO(this->get_logger(), "recv_time [%u.%u]", recv_time.sec, recv_time.nanosec);
   #endif
 
-  recv_pose = odom -> pose.pose;
-  recv_pose_cov = odom -> pose.covariance;
+  recv_pose      = odom -> pose.pose;
+  recv_pose_cov  = odom -> pose.covariance;
 
-  calc_vel_theta();
+  recv_twist     = odom -> twist.twist;
+  recv_twist_cov = odom -> twist.covariance;
+  
+
+  // calc_vel_theta();
+  publish();
 }
 
 void OdomCovarianceOverride::publish()
@@ -49,31 +66,47 @@ void OdomCovarianceOverride::publish()
   geometry_msgs::msg::Quaternion odom_quat = tf2::toMsg(quat);
   std::string frame_id = this->get_parameter("frame_id").as_string();
 
-  pose_yaw_covariance = calc_yaw_covariance();
+  // pose_yaw_covariance = calc_yaw_covariance();
 
   pose_cov = {
-    static_cast<double>(recv_pose_cov[0]), 0., 0., 0., 0., 0.,
-    0., static_cast<double>(recv_pose_cov[7]), 0., 0., 0., 0.,
-    0., 0., static_cast<double>(recv_pose_cov[14]), 0., 0., 0.,
-    0., 0., 0., 0., 0., 0.,
-    0., 0., 0., 0., 0., 0.,
-    0., 0., 0., 0., 0., pose_yaw_covariance };
+    pose_covariance_in[0], 0., 0., 0., 0., 0.,
+    0., pose_covariance_in[1], 0., 0., 0., 0.,
+    0., 0., pose_covariance_in[2], 0., 0., 0.,
+    0., 0., 0., pose_covariance_in[3], 0., 0.,
+    0., 0., 0., 0., pose_covariance_in[4], 0.,
+    0., 0., 0., 0., 0., pose_covariance_in[5] };
+
+  twist_cov = {
+    twist_covariance_in[0], 0., 0., 0., 0., 0.,
+    0., twist_covariance_in[1], 0., 0., 0., 0.,
+    0., 0., twist_covariance_in[2], 0., 0., 0.,
+    0., 0., 0., twist_covariance_in[3], 0., 0.,
+    0., 0., 0., 0., twist_covariance_in[4], 0.,
+    0., 0., 0., 0., 0., twist_covariance_in[5] };
 
 
   // set the header
-  odom.header.stamp.sec = recv_time.sec;
+  odom.header.stamp.sec     = recv_time.sec;
   odom.header.stamp.nanosec = recv_time.nanosec;
-  odom.header.frame_id = frame_id;
+
+  if(override_frame){
+    odom.header.frame_id      = frame_id;
+  }else{
+    odom.header.frame_id      = recv_frame_id;
+  }
 
   // set the position
-  odom.pose.pose.position = recv_pose.position;
-  odom.pose.pose.orientation = odom_quat;
-  odom.pose.covariance = pose_cov;
+  odom.pose.pose        = recv_pose;
+  odom.pose.covariance  = pose_cov;
 
-  // set the velocity
-  odom.twist.twist.linear.x = velocity;
-  odom.twist.twist.linear.y = 0.0;
-  odom.twist.twist.angular.z = 0.0;
+  // set twist
+  odom.twist.twist      = recv_twist;
+  odom.twist.covariance = twist_cov;
+
+  // // set the velocity
+  // odom.twist.twist.linear.x = velocity;
+  // odom.twist.twist.linear.y = 0.0;
+  // odom.twist.twist.angular.z = 0.0;
 
 
   odom_pub_ -> publish(odom);

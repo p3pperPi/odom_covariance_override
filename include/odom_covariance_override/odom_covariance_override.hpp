@@ -17,6 +17,7 @@
 // cpp
 #include <memory>
 #include <math.h>
+#include <string.h>
 
 
 
@@ -33,16 +34,25 @@ class OdomCovarianceOverride : public rclcpp::Node
         geometry_msgs::msg::Pose recv_pose;
         std::array<double, 36> recv_pose_cov;
 
+        geometry_msgs::msg::Twist recv_twist;
+        std::array<double, 36> recv_twist_cov;
+
         builtin_interfaces::msg::Time prev_time;
         geometry_msgs::msg::Pose prev_pose;
         std::array<double, 36> prev_pose_cov;
 
         geometry_msgs::msg::PoseWithCovariance current_pose;
         geometry_msgs::msg::TwistWithCovariance current_twist;
+        std::vector<double> pose_covariance_in;
+        std::vector<double> twist_covariance_in;
         std::array<double, 36> pose_cov;
+        std::array<double, 36> twist_cov;
         tf2::Quaternion quat;
         double velocity;
         double pose_yaw_covariance;
+
+        std::string recv_frame_id;
+        bool override_frame;
 
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
